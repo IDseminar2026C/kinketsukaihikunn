@@ -104,7 +104,77 @@ input {
   font-size: 1rem;
 }
 
+.result-remaining {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #555;
+}
+
 .result-message {
   margin: 8px 0 0;
   font-size: 0.95rem;
+  font-weight: bold;
+}
+
+/* 給料日リセットボタン */
+.reset-button {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+  padding: 12px;
+  font-size: 1rem;
+  font-weight: bold;
+  color: #fff;
+  background: #2d3a4a;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.reset-button:active {
+  opacity: 0.8;
+}
+
+/* 危険水域：結果カードだけを赤く光らせる */
+.result.danger {
+  background: #2a0000;
+  border-color: #ff1a1a;
+  color: #fff;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+.result.danger #result-value {
+  color: #ff3333;
+  text-shadow: 0 0 8px #ff0000, 0 0 16px #ff0000;
+}
+
+.result.danger .result-remaining {
+  color: #ffb3b3;
+}
+
+.result.danger .result-message {
+  color: #ff6666;
+}
+
+.result.danger .reset-button {
+  background: #fff;
+  color: #2a0000;
+}
+
+/* 枠の光が強くなったり弱くなったりする */
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 0 6px #ff0000;
+  }
+  50% {
+    box-shadow: 0 0 24px #ff0000, 0 0 40px #ff0000;
+  }
+}
+
+/* 動きを減らす設定の人には点滅を止める */
+@media (prefers-reduced-motion: reduce) {
+  .result.danger {
+    animation: none;
+    box-shadow: 0 0 16px #ff0000;
+  }
 }
