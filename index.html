@@ -19,6 +19,7 @@
       <h2>本日の防衛ライン</h2>
       <p class="result-amount"><span id="result-value">---</span><span class="unit"> 円 / 日</span></p>
       <p class="result-remaining" id="result-remaining"></p>
+      <p class="result-savings" id="result-savings"></p>
       <p class="result-message" id="result-message">数値を入力してください</p>
       <button type="button" class="reset-button" id="reset-button">給料日リセット</button>
     </section>
@@ -38,6 +39,14 @@
         来月に残したい目標額（円）
         <input type="number" id="goal" min="0" inputmode="numeric" placeholder="例：10000">
       </label>
+      <label>
+        前月までの貯金額（円）
+        <input type="number" id="savings" min="0" inputmode="numeric" placeholder="例：20000">
+      </label>
+      <label class="check">
+        <input type="checkbox" id="use-savings">
+        貯金も「使えるお金」に含める
+      </label>
     </section>
 
     <!-- エリア3：今月の状況 -->
@@ -49,20 +58,50 @@
         <span class="note" id="days-note"></span>
       </label>
 
-      <details class="expenses">
-        <summary>これまでの支出を入力する</summary>
-        <label>
-          食費（円）
-          <input type="number" id="food" min="0" inputmode="numeric" placeholder="0">
-        </label>
-        <label>
-          交際費（円）
-          <input type="number" id="social" min="0" inputmode="numeric" placeholder="0">
-        </label>
-        <label>
-          雑費（円）
-          <input type="number" id="misc" min="0" inputmode="numeric" placeholder="0">
-        </label>
+      <details class="fold">
+        <summary>支出を記録する</summary>
+        <div class="entry-form">
+          <select id="expense-category" aria-label="カテゴリ">
+            <option value="food">食費</option>
+            <option value="social">交際費</option>
+            <option value="misc">雑費</option>
+          </select>
+          <input type="number" id="expense-amount" min="1" inputmode="numeric" placeholder="金額（円）" aria-label="金額（円）">
+        </div>
+        <p class="form-error" id="expense-error"></p>
+        <div class="form-buttons">
+          <button type="button" class="add-button" id="expense-add">記録する</button>
+          <button type="button" class="cancel-button" id="expense-cancel" hidden>キャンセル</button>
+        </div>
+
+        <p class="totals">
+          食費 <span id="food-total">0</span> 円 ／
+          交際費 <span id="social-total">0</span> 円 ／
+          雑費 <span id="misc-total">0</span> 円
+        </p>
+        <p class="total-line">支出の合計：<span id="expense-total">0</span> 円</p>
+        <ul class="entry-list" id="expense-list"></ul>
+      </details>
+    </section>
+
+    <!-- エリア4：残高メモ -->
+    <section class="card">
+      <h2>残高メモ</h2>
+      <details class="fold">
+        <summary>場所ごとの残高を記録する</summary>
+        <p class="note">表示するだけで、防衛ラインの計算には使いません</p>
+        <div class="entry-form">
+          <input type="text" id="balance-name" maxlength="20" placeholder="場所（例：PayPay）" aria-label="場所の名前">
+          <input type="number" id="balance-amount" min="0" inputmode="numeric" placeholder="金額（円）" aria-label="金額（円）">
+        </div>
+        <p class="form-error" id="balance-error"></p>
+        <div class="form-buttons">
+          <button type="button" class="add-button" id="balance-add">追加する</button>
+          <button type="button" class="cancel-button" id="balance-cancel" hidden>キャンセル</button>
+        </div>
+
+        <p class="total-line">残高の合計：<span id="balance-total">0</span> 円</p>
+        <ul class="entry-list" id="balance-list"></ul>
       </details>
     </section>
   </main>

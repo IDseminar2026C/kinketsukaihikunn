@@ -55,7 +55,8 @@ label {
   font-size: 0.9rem;
 }
 
-input {
+input,
+select {
   display: block;
   width: 100%;
   margin-top: 4px;
@@ -63,6 +64,22 @@ input {
   font-size: 1rem;
   border: 1px solid #ccc;
   border-radius: 8px;
+  background: #fff;
+}
+
+/* チェックボックスは文字の横に並べる */
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.check input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  flex-shrink: 0;
 }
 
 /* 入力欄の下の補足 */
@@ -73,15 +90,136 @@ input {
   color: #666;
 }
 
-/* 支出の折りたたみ */
-.expenses summary {
+/* 折りたたみ（支出・残高メモ） */
+.fold summary {
   cursor: pointer;
   font-weight: bold;
   padding: 8px 0;
 }
 
-.expenses[open] summary {
+.fold[open] summary {
   margin-bottom: 8px;
+}
+
+/* 記録の入力欄（横に並べる） */
+.entry-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.entry-form select,
+.entry-form input {
+  margin-top: 0;
+  flex: 1 1 120px;
+  min-width: 0;
+}
+
+.form-error {
+  min-height: 1em;
+  margin: 4px 0;
+  font-size: 0.85rem;
+  color: #c00;
+}
+
+.form-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.add-button,
+.cancel-button {
+  flex: 1;
+  padding: 10px;
+  font-size: 1rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.add-button {
+  color: #fff;
+  background: #3b6ea5;
+}
+
+.cancel-button {
+  color: #333;
+  background: #ddd;
+}
+
+.add-button:active,
+.cancel-button:active {
+  opacity: 0.8;
+}
+
+/* 合計の表示 */
+.totals {
+  margin: 12px 0 4px;
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.total-line {
+  margin: 8px 0;
+  font-weight: bold;
+}
+
+/* 記録の一覧 */
+.entry-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 260px;
+  overflow-y: auto;
+  border-top: 1px solid #eee;
+}
+
+.entry-list li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 4px;
+  border-bottom: 1px solid #eee;
+  font-size: 0.9rem;
+}
+
+/* 修正中の行 */
+.entry-list li.editing {
+  background: #fff7d6;
+}
+
+.entry-date {
+  flex-shrink: 0;
+  width: 3em;
+  color: #777;
+}
+
+.entry-name {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.entry-amount {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.small-button {
+  flex-shrink: 0;
+  padding: 6px 8px;
+  font-size: 0.8rem;
+  color: #2d3a4a;
+  background: #fff;
+  border: 1px solid #2d3a4a;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.small-button.delete {
+  color: #c00;
+  border-color: #c00;
 }
 
 /* 結果カード */
@@ -104,10 +242,15 @@ input {
   font-size: 1rem;
 }
 
-.result-remaining {
+.result-remaining,
+.result-savings {
   margin: 0;
   font-size: 0.9rem;
   color: #555;
+}
+
+.result-savings {
+  font-size: 0.8rem;
 }
 
 .result-message {
@@ -148,7 +291,8 @@ input {
   text-shadow: 0 0 8px #ff0000, 0 0 16px #ff0000;
 }
 
-.result.danger .result-remaining {
+.result.danger .result-remaining,
+.result.danger .result-savings {
   color: #ffb3b3;
 }
 
