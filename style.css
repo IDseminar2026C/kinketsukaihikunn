@@ -1,0 +1,110 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Hiragino Sans", "Noto Sans JP", "Yu Gothic", sans-serif;
+  background: #f4f5f7;
+  color: #222;
+}
+
+/* ヘッダー */
+.header {
+  background: #2d3a4a;
+  color: #fff;
+  text-align: center;
+  padding: 20px 16px;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 1.6rem;
+}
+
+.header p {
+  margin: 6px 0 0;
+  font-size: 0.9rem;
+  opacity: 0.85;
+}
+
+/* 全体レイアウト（スマホ優先の1カラム） */
+.container {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.card h2 {
+  margin: 0 0 12px;
+  font-size: 1.1rem;
+}
+
+/* 入力欄 */
+label {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+}
+
+input {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding: 10px;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
+
+/* 入力欄の下の補足 */
+.note {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.8rem;
+  color: #666;
+}
+
+/* 支出の折りたたみ */
+.expenses summary {
+  cursor: pointer;
+  font-weight: bold;
+  padding: 8px 0;
+}
+
+.expenses[open] summary {
+  margin-bottom: 8px;
+}
+
+/* 結果カード */
+.result {
+  text-align: center;
+  border: 2px solid #2d3a4a;
+}
+
+.result-amount {
+  margin: 8px 0;
+}
+
+#result-value {
+  font-size: 2.6rem;
+  font-weight: bold;
+  word-break: break-all;
+}
+
+.unit {
+  font-size: 1rem;
+}
+
+.result-message {
+  margin: 8px 0 0;
+  font-size: 0.95rem;
+}

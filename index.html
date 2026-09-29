@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>金欠回避くん</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- ヘッダー -->
+  <header class="header">
+    <h1>金欠回避くん</h1>
+    <p>家計簿はいらない。今日使っていい額だけわかる。</p>
+  </header>
+
+  <main class="container">
+    <!-- エリア1：基本設定 -->
+    <section class="card">
+      <h2>基本設定</h2>
+      <label>
+        収入（円）
+        <input type="number" id="income" min="0" inputmode="numeric" placeholder="例：80000">
+      </label>
+      <label>
+        固定費（円）
+        <input type="number" id="fixed" min="0" inputmode="numeric" placeholder="例：30000">
+      </label>
+      <label>
+        来月に残したい目標額（円）
+        <input type="number" id="goal" min="0" inputmode="numeric" placeholder="例：10000">
+      </label>
+    </section>
+
+    <!-- エリア2：今月の状況 -->
+    <section class="card">
+      <h2>今月の状況</h2>
+      <label>
+        今月の残り日数（日）
+        <input type="number" id="days" min="1" inputmode="numeric" placeholder="例：20">
+        <span class="note" id="days-note"></span>
+      </label>
+
+      <details class="expenses">
+        <summary>これまでの支出を入力する</summary>
+        <label>
+          食費（円）
+          <input type="number" id="food" min="0" inputmode="numeric" placeholder="0">
+        </label>
+        <label>
+          交際費（円）
+          <input type="number" id="social" min="0" inputmode="numeric" placeholder="0">
+        </label>
+        <label>
+          雑費（円）
+          <input type="number" id="misc" min="0" inputmode="numeric" placeholder="0">
+        </label>
+      </details>
+    </section>
+
+    <!-- エリア3：診断結果カード -->
+    <section class="card result" id="result-card">
+      <h2>本日の防衛ライン</h2>
+      <p class="result-amount"><span id="result-value">---</span><span class="unit"> 円 / 日</span></p>
+      <p class="result-message" id="result-message">数値を入力してください</p>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
