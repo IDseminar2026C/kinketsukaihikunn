@@ -27,15 +27,16 @@
       <p class="result-remaining" id="result-remaining"></p>
       <p class="result-savings" id="result-savings"></p>
       <p class="result-message" id="result-message">数値を入力してください</p>
-      <p class="note">毎月1日に、収入と出費の記録は自動でリセットされます</p>
+      <p class="note">毎月1日に、臨時収入と支出の記録は自動でリセットされます</p>
     </section>
 
     <!-- エリア2：基本設定 -->
     <section class="card">
       <h2>基本設定</h2>
       <label>
-        収入（円）
+        基本収入（毎月の収入）（円）
         <input type="number" id="income" min="0" inputmode="numeric" placeholder="例：80000">
+        <span class="note">バイト代や仕送りなど、毎月入るお金。月が変わっても残ります</span>
       </label>
       <label>
         固定費（円）
@@ -63,6 +64,23 @@
         <input type="number" id="days" min="1" inputmode="numeric" placeholder="例：20">
         <span class="note" id="days-note"></span>
       </label>
+
+      <details class="fold">
+        <summary>臨時収入を記録する</summary>
+        <p class="note">単発バイトやお小遣いなど、毎月は入らないお金</p>
+        <div class="entry-form">
+          <input type="text" id="extra-memo" maxlength="20" placeholder="内容（任意）" aria-label="内容">
+          <input type="number" id="extra-amount" min="1" inputmode="numeric" placeholder="金額（円）" aria-label="金額（円）">
+        </div>
+        <p class="form-message" id="extra-error"></p>
+        <div class="form-buttons">
+          <button type="button" class="add-button income-button" id="extra-add">記録する</button>
+          <button type="button" class="cancel-button" id="extra-cancel" hidden>キャンセル</button>
+        </div>
+
+        <p class="total-line">臨時収入の合計：<span id="extra-total">0</span> 円</p>
+        <ul class="entry-list" id="extra-list"></ul>
+      </details>
 
       <details class="fold">
         <summary>支出を記録する</summary>

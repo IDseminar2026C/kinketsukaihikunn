@@ -2,10 +2,8 @@
 const inputIds = ["income", "fixed", "goal", "days", "savings"];
 
 // 保存する入力欄（残り日数は毎回今日から計算し直すので保存しない）
+// 基本収入（income）・固定費・目標額・貯金額は、月が変わっても消さずに引き継ぐ
 const saveIds = ["income", "fixed", "goal", "savings"];
-
-// 月が変わったときに消す入力欄（固定費・目標額・貯金額は翌月に引き継ぐので消さない）
-const resetIds = ["income"];
 
 // localStorage に保存するときのキー
 const STORAGE_KEY = "kinketsu";
@@ -29,6 +27,9 @@ const CATEGORY_NAMES = {
   misc: "雑費"
 };
 
+// 臨時収入の記録の一覧 { id, memo, amount, date }（memo は空欄でもよい）
+let extraIncomes = [];
+
 // 出費の記録の一覧 { id, category, amount, date }
 let expenses = [];
 
@@ -36,6 +37,7 @@ let expenses = [];
 let balances = [];
 
 // 修正中の記録の id（修正していないときは null）
+let editingExtraId = null;
 let editingExpenseId = null;
 let editingBalanceId = null;
 
@@ -114,9 +116,28 @@ function getExpenseTotal() {
   return total;
 }
 
+// 臨時収入の記録の合計を求める
+function getExtraTotal() {
+  let total = 0;
+  extraIncomes.forEach(function (item) {
+    total += item.amount;
+  });
+  return total;
+}
+
+// 収入の合計 = 基本収入 + 臨時収入の合計
+function getIncomeTotal() {
+  return getNumber("income") + getExtraTotal();
+}
+
+// 収入が入っているか（基本収入が入力されている、または臨時収入が1件以上ある）
+function hasIncome() {
+  return document.getElementById("income").value !== "" || extraIncomes.length > 0;
+}
+
 // 防衛ラインを計算して画面に表示する
 function calculate() {
-  const income = getNumber("income");
+  const income = getIncomeTotal();
   const fixed = getNumber("fixed");
   const goal = getNumber("goal");
   const days = Math.floor(getNumber("days"));
@@ -126,7 +147,7 @@ function calculate() {
   // 総出費 = 記録した出費の合計
   const totalExpense = getExpenseTotal();
 
-  // 本当に使える残金 = 収入 - 固定費 - 目標額 - 総出費（チェックありなら貯金も足す）
+  // 本当に使える残金 = 収入の合計 - 固定費 - 目標額 - 総出費（チェックありなら貯金も足す）
   let remaining = income - fixed - goal - totalExpense;
   if (useSavings) {
     remaining += savings;
@@ -142,12 +163,12 @@ function calculate() {
   resultCard.classList.remove(...LEVEL_CLASSES);
   document.body.classList.remove("bankrupt");
 
-  // 収入が未入力のときは計算しない（最初から危険表示にならないように）
-  if (document.getElementById("income").value === "") {
+  // 基本収入も臨時収入もないときは計算しない（最初から危険表示にならないように）
+  if (!hasIncome()) {
     resultValue.textContent = "---";
     resultRemaining.textContent = "";
     resultSavings.textContent = "";
-    resultMessage.textContent = "収入を入力してください";
+    resultMessage.textContent = "基本収入を入力するか、臨時収入を記録してください";
     return;
   }
 
@@ -264,6 +285,91 @@ function createRow(texts, isEditing, onEdit, onDelete) {
   li.appendChild(deleteButton);
 
   return li;
+}
+
+// 臨時収入の一覧と合計を表示し直す
+function renderExtraIncomes() {
+  const list = document.getElementById("extra-list");
+  list.innerHTML = "";
+
+  // 新しい記録が上に来るように、後ろから順に並べる
+  extraIncomes.slice().reverse().forEach(function (item) {
+    list.appendChild(createRow(
+      [
+        { className: "entry-date", value: item.date },
+        { className: "entry-name", value: item.memo === "" ? "臨時収入" : item.memo },
+        { className: "entry-amount plus", value: "+" + item.amount.toLocaleString() + " 円" }
+      ],
+      item.id === editingExtraId,
+      function () { startEditExtra(item.id); },
+      function () { deleteExtra(item.id); }
+    ));
+  });
+
+  document.getElementById("extra-total").textContent = getExtraTotal().toLocaleString();
+}
+
+// 「記録する」「更新する」ボタン：臨時収入を追加する、または修正中の記録を書き換える
+function submitExtra() {
+  const memo = document.getElementById("extra-memo").value.trim();
+  const amount = readAmount("extra-amount", 1);
+  if (amount === null) {
+    showFormMessage("extra-error", "金額は1円以上の数字で入力してください", true);
+    return;
+  }
+
+  if (editingExtraId === null) {
+    extraIncomes.push({ id: createId(), memo: memo, amount: amount, date: getTodayText() });
+  } else {
+    const item = findById(extraIncomes, editingExtraId);
+    if (item) {
+      item.memo = memo;
+      item.amount = amount;
+    }
+  }
+
+  clearExtraForm();
+  refresh();
+}
+
+// 「修正」ボタン：臨時収入の内容を入力欄に戻して、修正できる状態にする
+function startEditExtra(id) {
+  const item = findById(extraIncomes, id);
+  if (!item) {
+    return;
+  }
+  editingExtraId = id;
+  document.getElementById("extra-memo").value = item.memo;
+  document.getElementById("extra-amount").value = item.amount;
+  document.getElementById("extra-error").textContent = "";
+  document.getElementById("extra-add").textContent = "更新する";
+  document.getElementById("extra-cancel").hidden = false;
+  document.getElementById("extra-amount").focus();
+  renderExtraIncomes();
+}
+
+// 「削除」ボタン：確認してから臨時収入の記録を消す
+function deleteExtra(id) {
+  if (!confirm("この記録を削除します。よろしいですか？")) {
+    return;
+  }
+  extraIncomes = extraIncomes.filter(function (item) {
+    return item.id !== id;
+  });
+  if (editingExtraId === id) {
+    clearExtraForm();
+  }
+  refresh();
+}
+
+// 臨時収入の入力欄を空にして、「記録する」の状態に戻す
+function clearExtraForm() {
+  editingExtraId = null;
+  document.getElementById("extra-memo").value = "";
+  document.getElementById("extra-amount").value = "";
+  document.getElementById("extra-error").textContent = "";
+  document.getElementById("extra-add").textContent = "記録する";
+  document.getElementById("extra-cancel").hidden = true;
 }
 
 // 出費の一覧とカテゴリ別の合計を表示し直す
@@ -559,6 +665,7 @@ function saveData() {
   const data = {
     month: savedMonth,
     useSavings: document.getElementById("use-savings").checked,
+    extraIncomes: extraIncomes,
     expenses: expenses,
     balances: balances
   };
@@ -589,6 +696,9 @@ function loadData() {
     }
   });
   document.getElementById("use-savings").checked = data.useSavings === true;
+  if (Array.isArray(data.extraIncomes)) {
+    extraIncomes = data.extraIncomes;
+  }
   if (Array.isArray(data.expenses)) {
     expenses = data.expenses;
   }
@@ -602,13 +712,14 @@ function loadData() {
 
 // 一覧・計算結果を表示し直して、保存する
 function refresh() {
+  renderExtraIncomes();
   renderExpenses();
   renderBalances();
   calculate();
   saveData();
 }
 
-// 月が変わっていたら、先月の残りを貯金に足してから今月のデータ（収入・出費の記録）を消す
+// 月が変わっていたら、先月の残りを貯金に足してから今月のデータ（臨時収入・出費の記録）を消す
 function checkNewMonth() {
   const thisMonth = getMonthKey();
 
@@ -621,11 +732,11 @@ function checkNewMonth() {
     return;
   }
 
-  let message = (new Date().getMonth() + 1) + "月になったので、収入と出費の記録をリセットしました。";
+  let message = (new Date().getMonth() + 1) + "月になったので、臨時収入と支出の記録をリセットしました。";
 
-  // 先月の残り = 収入 - 固定費 - 出費の合計（収入が未入力の月は、貯金額を変えない）
-  if (document.getElementById("income").value !== "") {
-    const leftover = getNumber("income") - getNumber("fixed") - getExpenseTotal();
+  // 先月の残り = 収入の合計 - 固定費 - 出費の合計（基本収入も臨時収入もない月は、貯金額を変えない）
+  if (hasIncome()) {
+    const leftover = getIncomeTotal() - getNumber("fixed") - getExpenseTotal();
     const newSavings = Math.max(0, getNumber("savings") + leftover);
     document.getElementById("savings").value = newSavings;
     if (leftover >= 0) {
@@ -635,10 +746,9 @@ function checkNewMonth() {
     }
   }
 
-  resetIds.forEach(function (id) {
-    document.getElementById(id).value = "";
-  });
+  extraIncomes = [];
   expenses = [];
+  clearExtraForm();
   clearExpenseForm();
   savedMonth = thisMonth;
 
@@ -662,6 +772,20 @@ document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("use-savings").addEventListener("change", function () {
     calculate();
     saveData();
+  });
+
+  // 臨時収入の記録
+  document.getElementById("extra-add").addEventListener("click", submitExtra);
+  document.getElementById("extra-cancel").addEventListener("click", function () {
+    clearExtraForm();
+    renderExtraIncomes();
+  });
+  ["extra-memo", "extra-amount"].forEach(function (id) {
+    document.getElementById(id).addEventListener("keydown", function (event) {
+      if (event.key === "Enter" && !event.isComposing) {
+        submitExtra();
+      }
+    });
   });
 
   // 出費の記録

@@ -293,6 +293,11 @@ select {
   background: #c0392b;
 }
 
+/* 臨時収入の「記録する」ボタンは緑 */
+.add-button.income-button {
+  background: #1e8449;
+}
+
 .add-button:disabled,
 select:disabled,
 input:disabled {
@@ -382,6 +387,11 @@ input:disabled {
 .entry-amount {
   flex-shrink: 0;
   white-space: nowrap;
+}
+
+/* 臨時収入の金額は緑 */
+.entry-amount.plus {
+  color: #1e8449;
 }
 
 .small-button {
