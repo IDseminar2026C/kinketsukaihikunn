@@ -61,6 +61,94 @@ body.bankrupt::before {
   }
 }
 
+/* 出費を記録したときのダメージ演出 */
+.damage-shake {
+  animation: damage-shake 0.4s ease-in-out;
+}
+
+@keyframes damage-shake {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  20% {
+    transform: translate(-8px, 3px);
+  }
+  40% {
+    transform: translate(7px, -3px);
+  }
+  60% {
+    transform: translate(-5px, 2px);
+  }
+  80% {
+    transform: translate(3px, -1px);
+  }
+}
+
+/* 画面のふちが一瞬赤く光る */
+.damage-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  box-shadow: inset 0 0 80px 20px rgba(255, 0, 0, 0.7);
+  background: rgba(255, 0, 0, 0.12);
+  animation: damage-flash 0.5s ease-out forwards;
+}
+
+@keyframes damage-flash {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* ダメージ数字（画面の中央に出て、上に浮かびながら消える） */
+.damage-number {
+  position: fixed;
+  top: 40%;
+  left: 50%;
+  z-index: 101;
+  pointer-events: none;
+  font-size: 3rem;
+  font-weight: bold;
+  color: #ff2a2a;
+  text-shadow: 0 0 4px #fff, 0 0 12px #ff0000, 2px 2px 0 #5a0000;
+  white-space: nowrap;
+  animation: damage-number 1s ease-out forwards;
+}
+
+@keyframes damage-number {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 0) scale(0.5);
+  }
+  15% {
+    opacity: 1;
+    transform: translate(-50%, -10px) scale(1.3);
+  }
+  30% {
+    transform: translate(-50%, -16px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -80px) scale(1);
+  }
+}
+
+/* 動きを減らす設定の人には、揺れと浮き上がりを止める（赤い光と数字だけ出す） */
+@media (prefers-reduced-motion: reduce) {
+  .damage-shake {
+    animation: none;
+  }
+
+  .damage-number {
+    transform: translate(-50%, 0);
+    animation: damage-flash 1s ease-out forwards;
+  }
+}
+
 /* ヘッダー */
 .header {
   background: #2d3a4a;
@@ -347,6 +435,8 @@ input:disabled {
   margin: 8px 0 0;
   font-size: 0.95rem;
   font-weight: bold;
+  /* 称号とひとことを2行に分けて表示する */
+  white-space: pre-line;
 }
 
 /* 月が変わったときのお知らせ */

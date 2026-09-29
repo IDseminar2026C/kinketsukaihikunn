@@ -202,21 +202,21 @@ function getSavingsText(savings, useSavings) {
   return "";
 }
 
-// 防衛ラインの状況に応じたメッセージを返す
+// 防衛ラインの状況に応じたメッセージを返す（段階 ＋ サバイバル称号 ＋ ひとこと）
 function getMessage(dailyLimit, remaining) {
   if (remaining < 0) {
-    return "【破産】すでに目標額に手をつけています！今日から財布を封印してください！";
+    return "【破産】☠️『GAMEOVER / 無』\n「給料日まで息を潜めよ」";
   }
   if (dailyLimit <= DANGER_LINE) {
-    return "【危険】1日" + DANGER_LINE + "円以下は水とパンの世界。コンビニに近づくな！";
+    return "【危険】🚨『瀕死のサバイバー』\n「水と日光で生きろ」";
   }
   if (dailyLimit < WARNING_LINE) {
-    return "【警戒】危険ラインは目の前。外食・コンビニは今日はガマン！";
+    return "【警戒】⚠️『もやし生活予備軍』\n「自炊の時が来た」";
   }
   if (dailyLimit < CAUTION_LINE) {
-    return "【注意】余裕はあまりありません。外食や衝動買いは控えめに。";
+    return "【注意】🛡️『一般市民』\n「平和な日常だ」";
   }
-  return "【安全】このペースなら大丈夫。防衛ラインを守りましょう。";
+  return "【安全】👑『石油王の余裕』\n「うまいもん食え！」";
 }
 
 // 今日を含めた、今月の残り日数を求める
@@ -303,7 +303,10 @@ function submitExpense() {
     return;
   }
 
-  if (editingExpenseId === null) {
+  // 新しく記録したときだけダメージ演出を出す（修正のときは出さない）
+  const isNew = editingExpenseId === null;
+
+  if (isNew) {
     expenses.push({ id: createId(), category: category, amount: amount, date: getTodayText() });
   } else {
     const item = findById(expenses, editingExpenseId);
@@ -315,6 +318,37 @@ function submitExpense() {
 
   clearExpenseForm();
   refresh();
+
+  if (isNew) {
+    showDamage(amount);
+  }
+}
+
+// 出費を記録した瞬間の「ダメージ」演出（画面の揺れ・赤いフラッシュ・ダメージ数字）
+function showDamage(amount) {
+  // 画面を揺らす（連続で記録しても毎回揺れるように、一度外してから付け直す）
+  const container = document.querySelector(".container");
+  container.classList.remove("damage-shake");
+  void container.offsetWidth;
+  container.classList.add("damage-shake");
+
+  // 画面のふちを赤く光らせる
+  const flash = document.createElement("div");
+  flash.className = "damage-flash";
+  document.body.appendChild(flash);
+
+  // ダメージ数字を飛び出させる
+  const number = document.createElement("div");
+  number.className = "damage-number";
+  number.textContent = "-" + amount.toLocaleString();
+  document.body.appendChild(number);
+
+  // アニメーションが終わったら消す
+  [flash, number].forEach(function (element) {
+    element.addEventListener("animationend", function () {
+      element.remove();
+    });
+  });
 }
 
 // 「修正」ボタン：記録の内容を入力欄に戻して、修正できる状態にする
