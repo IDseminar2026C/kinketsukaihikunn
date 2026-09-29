@@ -27,6 +27,22 @@ const CATEGORY_NAMES = {
   misc: "雑費"
 };
 
+// 出費のカテゴリごとの「必殺技」の名前（ダメージ演出で表示する）
+const SKILL_NAMES = {
+  food: "🍔 食欲の一撃！",
+  social: "🍻 付き合いの呪い！",
+  misc: "🛍️ 衝動買いの罠！"
+};
+
+// 称号の段階（order が大きいほど上のランク）
+const RANKS = {
+  bankrupt: { order: 0, title: "☠️ GAMEOVER / 無" },
+  danger: { order: 1, title: "🚨 瀕死のサバイバー" },
+  warning: { order: 2, title: "⚠️ もやし生活予備軍" },
+  caution: { order: 3, title: "🛡️ 一般市民" },
+  safe: { order: 4, title: "👑 石油王の余裕" }
+};
+
 // 臨時収入の記録の一覧 { id, memo, amount, date }（memo は空欄でもよい）
 let extraIncomes = [];
 
@@ -135,23 +151,21 @@ function hasIncome() {
   return document.getElementById("income").value !== "" || extraIncomes.length > 0;
 }
 
+// 本当に使える残金 = 収入の合計 - 固定費 - 目標額 - 総出費（チェックありなら貯金も足す）
+function getRemaining() {
+  let remaining = getIncomeTotal() - getNumber("fixed") - getNumber("goal") - getExpenseTotal();
+  if (document.getElementById("use-savings").checked) {
+    remaining += getNumber("savings");
+  }
+  return remaining;
+}
+
 // 防衛ラインを計算して画面に表示する
 function calculate() {
-  const income = getIncomeTotal();
-  const fixed = getNumber("fixed");
-  const goal = getNumber("goal");
   const days = Math.floor(getNumber("days"));
   const savings = getNumber("savings");
   const useSavings = document.getElementById("use-savings").checked;
-
-  // 総出費 = 記録した出費の合計
-  const totalExpense = getExpenseTotal();
-
-  // 本当に使える残金 = 収入の合計 - 固定費 - 目標額 - 総出費（チェックありなら貯金も足す）
-  let remaining = income - fixed - goal - totalExpense;
-  if (useSavings) {
-    remaining += savings;
-  }
+  const remaining = getRemaining();
 
   const resultCard = document.getElementById("result-card");
   const resultValue = document.getElementById("result-value");
@@ -412,6 +426,10 @@ function submitExpense() {
   // 新しく記録したときだけダメージ演出を出す（修正のときは出さない）
   const isNew = editingExpenseId === null;
 
+  // 記録する前の防衛ラインを超える出費なら「会心の一撃」にする
+  const limitBefore = getDailyLimit();
+  const isCritical = limitBefore !== null && amount > limitBefore;
+
   if (isNew) {
     expenses.push({ id: createId(), category: category, amount: amount, date: getTodayText() });
   } else {
@@ -426,31 +444,164 @@ function submitExpense() {
   refresh();
 
   if (isNew) {
-    showDamage(amount);
+    showDamage(amount, category, isCritical);
   }
 }
 
-// 出費を記録した瞬間の「ダメージ」演出（画面の揺れ・赤いフラッシュ・ダメージ数字）
-function showDamage(amount) {
+// 今の防衛ライン（計算できないときは null）
+function getDailyLimit() {
+  const days = Math.floor(getNumber("days"));
+  if (!hasIncome() || days <= 0) {
+    return null;
+  }
+  return Math.floor(getRemaining() / days);
+}
+
+// 出費を記録した瞬間の「ダメージ」演出（画面の揺れ・赤いフラッシュ・ダメージ数字・必殺技の名前）
+// isCritical が true のときは「会心の一撃」として、揺れを激しくして CRITICAL HIT!! を出す
+function showDamage(amount, category, isCritical) {
+  const effects = [];
+
   // 画面を揺らす（連続で記録しても毎回揺れるように、一度外してから付け直す）
   const container = document.querySelector(".container");
-  container.classList.remove("damage-shake");
+  container.classList.remove("damage-shake", "damage-shake-critical");
   void container.offsetWidth;
-  container.classList.add("damage-shake");
+  container.classList.add(isCritical ? "damage-shake-critical" : "damage-shake");
 
   // 画面のふちを赤く光らせる
   const flash = document.createElement("div");
   flash.className = "damage-flash";
-  document.body.appendChild(flash);
+  effects.push(flash);
 
   // ダメージ数字を飛び出させる
   const number = document.createElement("div");
   number.className = "damage-number";
   number.textContent = "-" + amount.toLocaleString();
-  document.body.appendChild(number);
+  effects.push(number);
 
-  // アニメーションが終わったら消す
-  [flash, number].forEach(function (element) {
+  // カテゴリごとの必殺技の名前を出す
+  const skill = document.createElement("div");
+  skill.className = "damage-skill";
+  skill.textContent = SKILL_NAMES[category] || "💥 謎の出費！";
+  effects.push(skill);
+
+  // 会心の一撃
+  if (isCritical) {
+    const critical = document.createElement("div");
+    critical.className = "damage-critical";
+    critical.textContent = "CRITICAL HIT!!";
+    effects.push(critical);
+  }
+
+  // 画面に出して、アニメーションが終わったら消す
+  effects.forEach(function (element) {
+    document.body.appendChild(element);
+    element.addEventListener("animationend", function () {
+      element.remove();
+    });
+  });
+}
+
+// お金が増えたか・称号が変わったかを確かめて、演出を出す
+function checkEffects() {
+  checkHeal();
+  checkRank();
+}
+
+// 前回確かめたときの称号の段階（まだ確かめていないときは null）
+let lastRank = null;
+
+// 今の称号の段階（計算できないときは null）
+function getRank() {
+  const dailyLimit = getDailyLimit();
+  if (dailyLimit === null) {
+    return null;
+  }
+  const remaining = getRemaining();
+  if (remaining < 0) {
+    return "bankrupt";
+  }
+  return getLevel(dailyLimit, remaining);
+}
+
+// 称号の段階が前回から変わっていたら、ランクアップ／ランクダウンの演出を出す
+function checkRank() {
+  const rank = getRank();
+  if (lastRank !== null && rank !== null && rank !== lastRank) {
+    showRankChange(lastRank, rank);
+  }
+  if (rank !== null) {
+    lastRank = rank;
+  }
+}
+
+// ランクアップ／ランクダウンの帯を画面に出す
+function showRankChange(before, after) {
+  const isUp = RANKS[after].order > RANKS[before].order;
+
+  const banner = document.createElement("div");
+  banner.className = "rank-banner " + (isUp ? "rank-up" : "rank-down");
+
+  const heading = document.createElement("div");
+  heading.className = "rank-heading";
+  heading.textContent = isUp ? "RANK UP!!" : "RANK DOWN…";
+
+  const detail = document.createElement("div");
+  detail.className = "rank-detail";
+  detail.textContent = RANKS[before].title + " → " + RANKS[after].title;
+
+  banner.appendChild(heading);
+  banner.appendChild(detail);
+  document.body.appendChild(banner);
+  banner.addEventListener("animationend", function () {
+    banner.remove();
+  });
+}
+
+// 前回確かめたときの「使える残金」（まだ確かめていないときは null）
+let lastRemaining = null;
+
+// 使える残金が前回より増えていたら、増えた分の回復演出を出す
+function checkHeal() {
+  const remaining = getRemaining();
+  if (lastRemaining !== null && remaining > lastRemaining && hasIncome()) {
+    showHeal(remaining - lastRemaining);
+  }
+  lastRemaining = remaining;
+}
+
+// お金が増えた瞬間の「回復」演出（緑の光・回復数字・コインが降る）
+function showHeal(amount) {
+  const effects = [];
+
+  // 画面のふちを緑に光らせる
+  const flash = document.createElement("div");
+  flash.className = "heal-flash";
+  effects.push(flash);
+
+  // 回復数字を浮かび上がらせる
+  const number = document.createElement("div");
+  number.className = "heal-number";
+  number.textContent = "+" + amount.toLocaleString();
+  effects.push(number);
+
+  // コインを画面の上から降らせる（場所・速さ・タイミングをばらばらにする）
+  // （動きを減らす設定の人には降らせない）
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // 降らせるのは CSS で描く「¥」の金貨
+  for (let i = 0; i < (reduceMotion ? 0 : 100); i++) {
+    const coin = document.createElement("div");
+    coin.className = "heal-coin yen-coin";
+    coin.textContent = "¥";
+    coin.style.left = Math.random() * 95 + "%";
+    coin.style.animationDuration = 1 + Math.random() * 0.8 + "s";
+    coin.style.animationDelay = Math.random() * 2 + "s";
+    effects.push(coin);
+  }
+
+  // 画面に出して、アニメーションが終わったら消す
+  effects.forEach(function (element) {
+    document.body.appendChild(element);
     element.addEventListener("animationend", function () {
       element.remove();
     });
@@ -717,6 +868,7 @@ function refresh() {
   renderBalances();
   calculate();
   saveData();
+  checkEffects();
 }
 
 // 月が変わっていたら、先月の残りを貯金に足してから今月のデータ（臨時収入・出費の記録）を消す
@@ -767,11 +919,14 @@ document.addEventListener("DOMContentLoaded", function () {
       calculate();
       saveData();
     });
+    // 入力し終わったとき（欄から離れた・Enter）だけ、お金が増えたか確かめる
+    document.getElementById(id).addEventListener("change", checkEffects);
   });
 
   document.getElementById("use-savings").addEventListener("change", function () {
     calculate();
     saveData();
+    checkEffects();
   });
 
   // 臨時収入の記録
