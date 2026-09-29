@@ -14,6 +14,12 @@
   </header>
 
   <main class="container">
+    <!-- 月が変わったときのお知らせ -->
+    <div class="month-notice" id="month-notice" hidden>
+      <p id="month-notice-text"></p>
+      <button type="button" class="small-button" id="month-notice-close">閉じる</button>
+    </div>
+
     <!-- エリア1：診断結果カード -->
     <section class="card result" id="result-card">
       <h2>本日の防衛ライン</h2>
@@ -21,7 +27,7 @@
       <p class="result-remaining" id="result-remaining"></p>
       <p class="result-savings" id="result-savings"></p>
       <p class="result-message" id="result-message">数値を入力してください</p>
-      <button type="button" class="reset-button" id="reset-button">給料日リセット</button>
+      <p class="note">毎月1日に、収入と出費の記録は自動でリセットされます</p>
     </section>
 
     <!-- エリア2：基本設定 -->
@@ -68,7 +74,7 @@
           </select>
           <input type="number" id="expense-amount" min="1" inputmode="numeric" placeholder="金額（円）" aria-label="金額（円）">
         </div>
-        <p class="form-error" id="expense-error"></p>
+        <p class="form-message" id="expense-error"></p>
         <div class="form-buttons">
           <button type="button" class="add-button" id="expense-add">記録する</button>
           <button type="button" class="cancel-button" id="expense-cancel" hidden>キャンセル</button>
@@ -90,14 +96,31 @@
       <details class="fold">
         <summary>場所ごとの残高を記録する</summary>
         <p class="note">表示するだけで、防衛ラインの計算には使いません</p>
-        <div class="entry-form">
-          <input type="text" id="balance-name" maxlength="20" placeholder="場所（例：PayPay）" aria-label="場所の名前">
-          <input type="number" id="balance-amount" min="0" inputmode="numeric" placeholder="金額（円）" aria-label="金額（円）">
+
+        <div class="sub-box deposit">
+          <h3 class="sub-title">増えたとき（入金）</h3>
+          <p class="note">同じ名前の場所には金額が足されます</p>
+          <div class="entry-form">
+            <input type="text" id="balance-name" maxlength="20" placeholder="場所の名前" aria-label="場所の名前">
+            <input type="number" id="balance-amount" min="0" inputmode="numeric" placeholder="金額（円）" aria-label="金額（円）">
+          </div>
+          <p class="form-message" id="balance-error"></p>
+          <div class="form-buttons">
+            <button type="button" class="add-button" id="balance-add">足す</button>
+            <button type="button" class="cancel-button" id="balance-cancel" hidden>キャンセル</button>
+          </div>
         </div>
-        <p class="form-error" id="balance-error"></p>
-        <div class="form-buttons">
-          <button type="button" class="add-button" id="balance-add">追加する</button>
-          <button type="button" class="cancel-button" id="balance-cancel" hidden>キャンセル</button>
+
+        <div class="sub-box withdraw">
+          <h3 class="sub-title">減ったとき（支払い・引き出し）</h3>
+          <div class="entry-form">
+            <select id="withdraw-place" aria-label="場所"></select>
+            <input type="number" id="withdraw-amount" min="1" inputmode="numeric" placeholder="金額（円）" aria-label="金額（円）">
+          </div>
+          <p class="form-message" id="withdraw-error"></p>
+          <div class="form-buttons">
+            <button type="button" class="add-button withdraw-button" id="withdraw-button">引く</button>
+          </div>
         </div>
 
         <p class="total-line">残高の合計：<span id="balance-total">0</span> 円</p>

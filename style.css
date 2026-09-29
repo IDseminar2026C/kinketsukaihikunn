@@ -167,11 +167,49 @@ select {
   min-width: 0;
 }
 
-.form-error {
+/* 入力欄の下のお知らせ（ふだんは赤いエラー、info のときは緑） */
+.form-message {
   min-height: 1em;
   margin: 4px 0;
   font-size: 0.85rem;
   color: #c00;
+}
+
+.form-message.info {
+  color: #1e8449;
+}
+
+/* 残高メモの「増えたとき」「減ったとき」の枠 */
+.sub-box {
+  margin-bottom: 12px;
+  padding: 10px;
+  border: 1px solid #e3e3e3;
+  border-left: 4px solid #2ecc71;
+  border-radius: 8px;
+}
+
+.sub-box.withdraw {
+  border-left-color: #e74c3c;
+}
+
+.sub-title {
+  margin: 0 0 4px;
+  font-size: 0.95rem;
+}
+
+.sub-box .note {
+  margin: 0 0 8px;
+}
+
+.add-button.withdraw-button {
+  background: #c0392b;
+}
+
+.add-button:disabled,
+select:disabled,
+input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .form-buttons {
@@ -311,23 +349,26 @@ select {
   font-weight: bold;
 }
 
-/* 給料日リセットボタン */
-.reset-button {
-  display: block;
-  width: 100%;
-  margin-top: 16px;
+/* 月が変わったときのお知らせ */
+.month-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
   padding: 12px;
-  font-size: 1rem;
-  font-weight: bold;
-  color: #fff;
-  background: #2d3a4a;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
+  font-size: 0.9rem;
+  background: #eaf6ee;
+  border: 2px solid #2ecc71;
+  border-radius: 12px;
 }
 
-.reset-button:active {
-  opacity: 0.8;
+.month-notice[hidden] {
+  display: none;
+}
+
+.month-notice p {
+  flex: 1;
+  margin: 0;
 }
 
 /* 安全：緑の枠 */
@@ -400,9 +441,8 @@ select {
   color: #ff6666;
 }
 
-.result.danger .reset-button {
-  background: #fff;
-  color: #2a0000;
+.result.danger .note {
+  color: #ffb3b3;
 }
 
 /* 枠の光が強くなったり弱くなったりする */

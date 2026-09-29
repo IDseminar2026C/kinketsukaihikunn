@@ -4,8 +4,8 @@ const inputIds = ["income", "fixed", "goal", "days", "savings"];
 // 保存する入力欄（残り日数は毎回今日から計算し直すので保存しない）
 const saveIds = ["income", "fixed", "goal", "savings"];
 
-// 給料日リセットで消す入力欄（貯金額は翌月に引き継ぐので消さない）
-const resetIds = ["income", "fixed", "goal"];
+// 月が変わったときに消す入力欄（固定費・目標額・貯金額は翌月に引き継ぐので消さない）
+const resetIds = ["income"];
 
 // localStorage に保存するときのキー
 const STORAGE_KEY = "kinketsu";
@@ -39,6 +39,9 @@ let balances = [];
 let editingExpenseId = null;
 let editingBalanceId = null;
 
+// データを最後に使った月（例："2026-09"）。まだ分からないときは null
+let savedMonth = null;
+
 // 入力欄の値を数値で取り出す（空欄やおかしな値は 0 として扱う）
 function getNumber(id) {
   const value = Number(document.getElementById(id).value);
@@ -70,10 +73,36 @@ function findById(list, id) {
   });
 }
 
+// 一覧の中から名前が同じ場所を探す（exceptId の場所は探さない）
+function findByName(name, exceptId) {
+  const key = normalizeName(name);
+  return balances.find(function (item) {
+    return item.id !== exceptId && normalizeName(item.name) === key;
+  });
+}
+
+// 名前を比べやすい形にする（全角・半角、大文字・小文字の違いをなくす）
+function normalizeName(name) {
+  return name.normalize("NFKC").toLowerCase().trim();
+}
+
+// 入力欄の下にお知らせを出す（isError が true なら赤い文字、false なら緑の文字）
+function showFormMessage(id, text, isError) {
+  const message = document.getElementById(id);
+  message.textContent = text;
+  message.classList.toggle("info", !isError);
+}
+
 // 今日の日付を「9/29」の形で返す
 function getTodayText() {
   const today = new Date();
   return (today.getMonth() + 1) + "/" + today.getDate();
+}
+
+// 今の月を「2026-09」の形で返す
+function getMonthKey() {
+  const today = new Date();
+  return today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, "0");
 }
 
 // 出費の記録の合計（総出費）を求める
@@ -270,7 +299,7 @@ function submitExpense() {
   const category = document.getElementById("expense-category").value;
   const amount = readAmount("expense-amount", 1);
   if (amount === null) {
-    document.getElementById("expense-error").textContent = "金額は1円以上の数字で入力してください";
+    showFormMessage("expense-error", "金額は1円以上の数字で入力してください", true);
     return;
   }
 
@@ -348,34 +377,107 @@ function renderBalances() {
   });
 
   document.getElementById("balance-total").textContent = total.toLocaleString();
+  renderWithdrawPlaces();
 }
 
-// 「追加する」「更新する」ボタン：残高を追加する、または修正中の残高を書き換える
+// 「減ったとき」の場所のプルダウンを、登録済みの場所で作り直す
+function renderWithdrawPlaces() {
+  const select = document.getElementById("withdraw-place");
+  const selectedId = select.value;
+  select.innerHTML = "";
+
+  if (balances.length === 0) {
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "先に場所を追加してください";
+    select.appendChild(option);
+  }
+
+  balances.forEach(function (item) {
+    const option = document.createElement("option");
+    option.value = item.id;
+    option.textContent = item.name;
+    select.appendChild(option);
+  });
+
+  // 作り直す前に選んでいた場所があれば、選んだままにする
+  if (findById(balances, selectedId)) {
+    select.value = selectedId;
+  }
+
+  const isEmpty = balances.length === 0;
+  select.disabled = isEmpty;
+  document.getElementById("withdraw-amount").disabled = isEmpty;
+  document.getElementById("withdraw-button").disabled = isEmpty;
+}
+
+// 「足す」「更新する」ボタン：残高を足す（同じ名前の場所があれば積み立てる）、または修正中の残高を書き換える
 function submitBalance() {
   const name = document.getElementById("balance-name").value.trim();
   const amount = readAmount("balance-amount", 0);
-  const error = document.getElementById("balance-error");
   if (name === "") {
-    error.textContent = "場所の名前を入力してください";
+    showFormMessage("balance-error", "場所の名前を入力してください", true);
     return;
   }
   if (amount === null) {
-    error.textContent = "金額は0円以上の数字で入力してください";
+    showFormMessage("balance-error", "金額は0円以上の数字で入力してください", true);
     return;
   }
 
+  let message;
   if (editingBalanceId === null) {
-    balances.push({ id: createId(), name: name, amount: amount });
+    const sameItem = findByName(name, null);
+    if (sameItem) {
+      sameItem.amount += amount;
+      message = sameItem.name + " に " + amount.toLocaleString() + " 円を足しました（合計 " + sameItem.amount.toLocaleString() + " 円）";
+    } else {
+      balances.push({ id: createId(), name: name, amount: amount });
+      message = name + " を追加しました";
+    }
   } else {
+    // 修正でほかの場所と同じ名前にはできない
+    if (findByName(name, editingBalanceId)) {
+      showFormMessage("balance-error", "同じ名前の場所がすでにあります", true);
+      return;
+    }
     const item = findById(balances, editingBalanceId);
     if (item) {
       item.name = name;
       item.amount = amount;
     }
+    message = name + " の残高を " + amount.toLocaleString() + " 円に直しました";
   }
 
   clearBalanceForm();
   refresh();
+  showFormMessage("balance-error", message, false);
+}
+
+// 「引く」ボタン：選んだ場所の残高から金額を引く
+function withdrawBalance() {
+  const item = findById(balances, document.getElementById("withdraw-place").value);
+  const amount = readAmount("withdraw-amount", 1);
+  if (!item) {
+    showFormMessage("withdraw-error", "場所を選んでください", true);
+    return;
+  }
+  if (amount === null) {
+    showFormMessage("withdraw-error", "金額は1円以上の数字で入力してください", true);
+    return;
+  }
+  if (amount > item.amount) {
+    showFormMessage("withdraw-error", "残高が足りません（" + item.name + "：" + item.amount.toLocaleString() + " 円）", true);
+    return;
+  }
+
+  item.amount -= amount;
+  // 同じ場所を修正中だったときは、古い金額で上書きしないように修正をやめる
+  if (editingBalanceId === item.id) {
+    clearBalanceForm();
+  }
+  document.getElementById("withdraw-amount").value = "";
+  refresh();
+  showFormMessage("withdraw-error", item.name + " から " + amount.toLocaleString() + " 円を引きました（残り " + item.amount.toLocaleString() + " 円）", false);
 }
 
 // 「修正」ボタン：残高の内容を入力欄に戻して、修正できる状態にする
@@ -414,13 +516,14 @@ function clearBalanceForm() {
   document.getElementById("balance-name").value = "";
   document.getElementById("balance-amount").value = "";
   document.getElementById("balance-error").textContent = "";
-  document.getElementById("balance-add").textContent = "追加する";
+  document.getElementById("balance-add").textContent = "足す";
   document.getElementById("balance-cancel").hidden = true;
 }
 
 // 入力値・記録・設定を localStorage に保存する
 function saveData() {
   const data = {
+    month: savedMonth,
     useSavings: document.getElementById("use-savings").checked,
     expenses: expenses,
     balances: balances
@@ -458,6 +561,9 @@ function loadData() {
   if (Array.isArray(data.balances)) {
     balances = data.balances;
   }
+  if (typeof data.month === "string") {
+    savedMonth = data.month;
+  }
 }
 
 // 一覧・計算結果を表示し直して、保存する
@@ -468,16 +574,43 @@ function refresh() {
   saveData();
 }
 
-// 給料日リセット：確認してから今月のデータを消す（貯金額・設定・残高メモは残す）
-function resetData() {
-  if (!confirm("今月のデータ（収入・固定費・目標額・出費の記録）を消去します。\n前月までの貯金額と残高メモは残ります。よろしいですか？")) {
+// 月が変わっていたら、先月の残りを貯金に足してから今月のデータ（収入・出費の記録）を消す
+function checkNewMonth() {
+  const thisMonth = getMonthKey();
+
+  // 月が保存されていない（初めて使う・古い形式のデータ）ときは、今月のデータとして扱う
+  if (savedMonth === null) {
+    savedMonth = thisMonth;
     return;
   }
+  if (savedMonth === thisMonth) {
+    return;
+  }
+
+  let message = (new Date().getMonth() + 1) + "月になったので、収入と出費の記録をリセットしました。";
+
+  // 先月の残り = 収入 - 固定費 - 出費の合計（収入が未入力の月は、貯金額を変えない）
+  if (document.getElementById("income").value !== "") {
+    const leftover = getNumber("income") - getNumber("fixed") - getExpenseTotal();
+    const newSavings = Math.max(0, getNumber("savings") + leftover);
+    document.getElementById("savings").value = newSavings;
+    if (leftover >= 0) {
+      message += "先月の残り " + leftover.toLocaleString() + " 円を貯金に足しました（貯金 " + newSavings.toLocaleString() + " 円）。";
+    } else {
+      message += "先月は " + (-leftover).toLocaleString() + " 円使いすぎたので、貯金から引きました（貯金 " + newSavings.toLocaleString() + " 円）。";
+    }
+  }
+
   resetIds.forEach(function (id) {
     document.getElementById(id).value = "";
   });
   expenses = [];
   clearExpenseForm();
+  savedMonth = thisMonth;
+
+  document.getElementById("month-notice-text").textContent = message;
+  document.getElementById("month-notice").hidden = false;
+
   setRemainingDays();
   refresh();
 }
@@ -522,10 +655,27 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     });
   });
+  document.getElementById("withdraw-button").addEventListener("click", withdrawBalance);
+  document.getElementById("withdraw-amount").addEventListener("keydown", function (event) {
+    if (event.key === "Enter" && !event.isComposing) {
+      withdrawBalance();
+    }
+  });
 
-  document.getElementById("reset-button").addEventListener("click", resetData);
+  // 月が変わったお知らせを閉じる
+  document.getElementById("month-notice-close").addEventListener("click", function () {
+    document.getElementById("month-notice").hidden = true;
+  });
+
+  // ページを開いたまま月が変わったときのために、画面に戻ってきたときにも確かめる
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible") {
+      checkNewMonth();
+    }
+  });
 
   loadData();
+  checkNewMonth();
   setRemainingDays();
   refresh();
 });
