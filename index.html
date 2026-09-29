@@ -14,7 +14,16 @@
   </header>
 
   <main class="container">
-    <!-- エリア1：基本設定 -->
+    <!-- エリア1：診断結果カード -->
+    <section class="card result" id="result-card">
+      <h2>本日の防衛ライン</h2>
+      <p class="result-amount"><span id="result-value">---</span><span class="unit"> 円 / 日</span></p>
+      <p class="result-remaining" id="result-remaining"></p>
+      <p class="result-message" id="result-message">数値を入力してください</p>
+      <button type="button" class="reset-button" id="reset-button">給料日リセット</button>
+    </section>
+
+    <!-- エリア2：基本設定 -->
     <section class="card">
       <h2>基本設定</h2>
       <label>
@@ -31,7 +40,7 @@
       </label>
     </section>
 
-    <!-- エリア2：今月の状況 -->
+    <!-- エリア3：今月の状況 -->
     <section class="card">
       <h2>今月の状況</h2>
       <label>
@@ -55,15 +64,6 @@
           <input type="number" id="misc" min="0" inputmode="numeric" placeholder="0">
         </label>
       </details>
-    </section>
-
-    <!-- エリア3：診断結果カード -->
-    <section class="card result" id="result-card">
-      <h2>本日の防衛ライン</h2>
-      <p class="result-amount"><span id="result-value">---</span><span class="unit"> 円 / 日</span></p>
-      <p class="result-remaining" id="result-remaining"></p>
-      <p class="result-message" id="result-message">数値を入力してください</p>
-      <button type="button" class="reset-button" id="reset-button">給料日リセット</button>
     </section>
   </main>
 
