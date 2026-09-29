@@ -13,8 +13,14 @@ const STORAGE_KEY = "kinketsu";
 // 防衛ラインがこの金額以下なら危険（赤く光らせる）
 const DANGER_LINE = 1000;
 
-// 防衛ラインがこの金額未満なら注意
-const CAUTION_LINE = 2000;
+// 防衛ラインがこの金額未満なら警戒（オレンジ）
+const WARNING_LINE = 2000;
+
+// 防衛ラインがこの金額未満なら注意（黄色）
+const CAUTION_LINE = 3000;
+
+// 段階ごとに結果カードへ付けるクラス名
+const LEVEL_CLASSES = ["danger", "warning", "caution", "safe"];
 
 // 支出カテゴリの表示名
 const CATEGORY_NAMES = {
@@ -103,8 +109,8 @@ function calculate() {
   const resultSavings = document.getElementById("result-savings");
   const resultMessage = document.getElementById("result-message");
 
-  // いったん危険表示を外してから判定し直す
-  resultCard.classList.remove("danger");
+  // いったん段階の表示を外してから判定し直す
+  resultCard.classList.remove(...LEVEL_CLASSES);
 
   // 収入が未入力のときは計算しない（最初から危険表示にならないように）
   if (document.getElementById("income").value === "") {
@@ -132,10 +138,22 @@ function calculate() {
   resultSavings.textContent = getSavingsText(savings, useSavings);
   resultMessage.textContent = getMessage(dailyLimit, remaining);
 
-  // 危険水域（防衛ライン1000円以下 または 残金マイナス）なら結果カードだけ赤くする
-  if (dailyLimit <= DANGER_LINE || remaining < 0) {
-    resultCard.classList.add("danger");
+  // 段階に応じて結果カードの色を変える（危険のときだけ赤く光らせる）
+  resultCard.classList.add(getLevel(dailyLimit, remaining));
+}
+
+// 防衛ラインの段階を返す（danger / warning / caution / safe）
+function getLevel(dailyLimit, remaining) {
+  if (remaining < 0 || dailyLimit <= DANGER_LINE) {
+    return "danger";
   }
+  if (dailyLimit < WARNING_LINE) {
+    return "warning";
+  }
+  if (dailyLimit < CAUTION_LINE) {
+    return "caution";
+  }
+  return "safe";
 }
 
 // 貯金を計算に含めているかどうかを知らせる文を返す
@@ -156,6 +174,9 @@ function getMessage(dailyLimit, remaining) {
   }
   if (dailyLimit <= DANGER_LINE) {
     return "【危険】1日" + DANGER_LINE + "円以下は水とパンの世界。コンビニに近づくな！";
+  }
+  if (dailyLimit < WARNING_LINE) {
+    return "【警戒】危険ラインは目の前。外食・コンビニは今日はガマン！";
   }
   if (dailyLimit < CAUTION_LINE) {
     return "【注意】余裕はあまりありません。外食や衝動買いは控えめに。";

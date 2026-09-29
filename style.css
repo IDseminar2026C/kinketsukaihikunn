@@ -278,6 +278,54 @@ select {
   opacity: 0.8;
 }
 
+/* 安全：緑の枠 */
+.result.safe {
+  border-color: #2ecc71;
+}
+
+.result.safe .result-message {
+  color: #1e8449;
+}
+
+/* 注意：黄色の枠 */
+.result.caution {
+  border-color: #f1c40f;
+  background: #fffbe6;
+}
+
+.result.caution #result-value {
+  color: #b7950b;
+}
+
+.result.caution .result-message {
+  color: #9a7d0a;
+}
+
+/* 警戒：オレンジの枠をゆっくり光らせる */
+.result.warning {
+  border-color: #ff8c1a;
+  background: #fff1e0;
+  animation: glow 2.5s ease-in-out infinite;
+}
+
+.result.warning #result-value {
+  color: #e67300;
+}
+
+.result.warning .result-message {
+  color: #cc5c00;
+  font-weight: bold;
+}
+
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 2px #ff8c1a;
+  }
+  50% {
+    box-shadow: 0 0 14px #ff8c1a;
+  }
+}
+
 /* 危険水域：結果カードだけを赤く光らせる */
 .result.danger {
   background: #2a0000;
@@ -317,6 +365,11 @@ select {
 
 /* 動きを減らす設定の人には点滅を止める */
 @media (prefers-reduced-motion: reduce) {
+  .result.warning {
+    animation: none;
+    box-shadow: 0 0 8px #ff8c1a;
+  }
+
   .result.danger {
     animation: none;
     box-shadow: 0 0 16px #ff0000;
