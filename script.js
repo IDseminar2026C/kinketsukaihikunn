@@ -111,6 +111,7 @@ function calculate() {
 
   // いったん段階の表示を外してから判定し直す
   resultCard.classList.remove(...LEVEL_CLASSES);
+  document.body.classList.remove("bankrupt");
 
   // 収入が未入力のときは計算しない（最初から危険表示にならないように）
   if (document.getElementById("income").value === "") {
@@ -140,6 +141,11 @@ function calculate() {
 
   // 段階に応じて結果カードの色を変える（危険のときだけ赤く光らせる）
   resultCard.classList.add(getLevel(dailyLimit, remaining));
+
+  // 破産（残金マイナス）のときは背景にどくろを出す
+  if (remaining < 0) {
+    document.body.classList.add("bankrupt");
+  }
 }
 
 // 防衛ラインの段階を返す（danger / warning / caution / safe）

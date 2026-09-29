@@ -5,8 +5,60 @@
 body {
   margin: 0;
   font-family: "Hiragino Sans", "Noto Sans JP", "Yu Gothic", sans-serif;
-  background: #f4f5f7;
+  /* 革の財布風：茶色の革＋左右のステッチ（縫い目） */
+  background-color: #6b4226;
+  background-image:
+    /* 左右のステッチ */
+    repeating-linear-gradient(to bottom, #e8c9a0 0 8px, transparent 8px 14px),
+    repeating-linear-gradient(to bottom, #e8c9a0 0 8px, transparent 8px 14px),
+    /* 革のシボ（細かい凹凸） */
+    radial-gradient(rgba(0, 0, 0, 0.18) 1px, transparent 1.5px),
+    radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1.5px),
+    /* 革のツヤ */
+    linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.25));
+  background-size: 2px 100%, 2px 100%, 5px 5px, 7px 7px, 100% 100%;
+  background-position: left 6px top 0, right 6px top 0, 0 0, 3px 2px, 0 0;
+  background-repeat: no-repeat, no-repeat, repeat, repeat, no-repeat;
   color: #222;
+}
+
+/* 破産：背景にどくろを出現させる（カードの後ろに表示） */
+body.bankrupt::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-color: rgba(120, 0, 0, 0.35);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Ctext x='10' y='48' font-size='40'%3E%F0%9F%92%80%3C/text%3E%3Ctext x='68' y='108' font-size='34'%3E%E2%98%A0%EF%B8%8F%3C/text%3E%3C/svg%3E");
+  background-size: 120px 120px;
+  animation: skull-appear 0.6s ease-out, skull-float 3s ease-in-out 0.6s infinite;
+}
+
+@keyframes skull-appear {
+  from {
+    opacity: 0;
+    transform: scale(1.3);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes skull-float {
+  0%, 100% {
+    background-position: 0 0;
+  }
+  50% {
+    background-position: 0 -12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.bankrupt::before {
+    animation: none;
+  }
 }
 
 /* ヘッダー */
