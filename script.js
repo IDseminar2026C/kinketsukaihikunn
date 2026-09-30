@@ -673,6 +673,7 @@ function renderBalances() {
 
   document.getElementById("balance-total").textContent = total.toLocaleString();
   renderWithdrawPlaces();
+  renderBalanceNames();
 }
 
 // 「減ったとき」の場所のプルダウンを、登録済みの場所で作り直す
@@ -706,7 +707,19 @@ function renderWithdrawPlaces() {
   document.getElementById("withdraw-button").disabled = isEmpty;
 }
 
+// 場所の名前の入力候補を、登録済みの場所で作り直す
+function renderBalanceNames() {
+  const datalist = document.getElementById("balance-name-list");
+  datalist.innerHTML = "";
+  balances.forEach(function (item) {
+    const option = document.createElement("option");
+    option.value = item.name;
+    datalist.appendChild(option);
+  });
+}
+
 // 「足す」「更新する」ボタン：残高を足す（同じ名前の場所があれば積み立てる）、または修正中の残高を書き換える
+// 修正でほかの場所と同じ名前にしたときは、そちらに合算する
 function submitBalance() {
   const name = document.getElementById("balance-name").value.trim();
   const amount = readAmount("balance-amount", 0);
@@ -730,17 +743,26 @@ function submitBalance() {
       message = name + " を追加しました";
     }
   } else {
-    // 修正でほかの場所と同じ名前にはできない
-    if (findByName(name, editingBalanceId)) {
-      showFormMessage("balance-error", "同じ名前の場所がすでにあります", true);
-      return;
+    const sameItem = findByName(name, editingBalanceId);
+    if (sameItem) {
+      // ほかの場所と同じ名前にしたときは、確認してからそちらに金額を足して、修正元を消す
+      if (!confirm("「" + sameItem.name + "」にまとめます。よろしいですか？")) {
+        return;
+      }
+      const mergedId = editingBalanceId;
+      sameItem.amount += amount;
+      balances = balances.filter(function (item) {
+        return item.id !== mergedId;
+      });
+      message = sameItem.name + " にまとめました（合計 " + sameItem.amount.toLocaleString() + " 円）";
+    } else {
+      const item = findById(balances, editingBalanceId);
+      if (item) {
+        item.name = name;
+        item.amount = amount;
+      }
+      message = name + " の残高を " + amount.toLocaleString() + " 円に直しました";
     }
-    const item = findById(balances, editingBalanceId);
-    if (item) {
-      item.name = name;
-      item.amount = amount;
-    }
-    message = name + " の残高を " + amount.toLocaleString() + " 円に直しました";
   }
 
   clearBalanceForm();

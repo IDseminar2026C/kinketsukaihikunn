@@ -121,7 +121,8 @@
           <h3 class="sub-title">増えたとき（入金）</h3>
           <p class="note">同じ名前の場所には金額が足されます</p>
           <div class="entry-form">
-            <input type="text" id="balance-name" maxlength="20" placeholder="場所の名前" aria-label="場所の名前">
+            <input type="text" id="balance-name" list="balance-name-list" maxlength="20" placeholder="場所の名前" aria-label="場所の名前">
+            <datalist id="balance-name-list"></datalist>
             <input type="number" id="balance-amount" min="0" inputmode="numeric" placeholder="金額（円）" aria-label="金額（円）">
           </div>
           <p class="form-message" id="balance-error"></p>
