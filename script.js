@@ -3,7 +3,7 @@ const inputIds = ["income", "fixed", "goal", "days", "savings"];
 
 // 保存する入力欄（残り日数は毎回今日から計算し直すので保存しない）
 // 基本収入（income）・固定費・目標額・貯金額は、月が変わっても消さずに引き継ぐ
-const saveIds = ["income", "fixed", "goal", "savings"];
+const saveIds = ["income", "fixed", "goal", "savings", "reset-day"];
 
 // localStorage に保存するときのキー
 const STORAGE_KEY = "kinketsu";
@@ -137,10 +137,36 @@ function getTodayText() {
   return (today.getMonth() + 1) + "/" + today.getDate();
 }
 
-// 今の月を「2026-09」の形で返す
-function getMonthKey() {
+// リセット日（1〜31）を返す（空欄やおかしな値のときは 1日）
+function getResetDay() {
+  const day = Math.floor(getNumber("reset-day"));
+  if (day < 1 || day > 31) {
+    return 1;
+  }
+  return day;
+}
+
+// その月のリセット日を返す（月末より後の日なら月末にする）
+function getResetDate(year, month) {
+  const lastDay = new Date(year, month + 1, 0).getDate();
+  return new Date(year, month, Math.min(getResetDay(), lastDay));
+}
+
+// 今の期間が始まった日（直近のリセット日）を返す
+function getPeriodStart() {
   const today = new Date();
-  return today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, "0");
+  let start = getResetDate(today.getFullYear(), today.getMonth());
+  // 今月のリセット日がまだ来ていなければ、先月のリセット日から始まっている
+  if (today < start) {
+    start = getResetDate(today.getFullYear(), today.getMonth() - 1);
+  }
+  return start;
+}
+
+// 今の期間が始まった月を「2026-09」の形で返す
+function getMonthKey() {
+  const start = getPeriodStart();
+  return start.getFullYear() + "-" + String(start.getMonth() + 1).padStart(2, "0");
 }
 
 // 出費の記録の合計（総出費）を求める
@@ -274,20 +300,31 @@ function getMessage(dailyLimit, remaining) {
   return "【安全】👑『石油王の余裕』\n「うまいもん食え！」";
 }
 
-// 今日を含めた、今月の残り日数を求める
+// 今日を含めた、次のリセット日の前日までの日数を求める
 function getRemainingDays() {
-  const today = new Date();
-  // 翌月の0日 = 今月の最終日
-  const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-  return lastDay - today.getDate() + 1;
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const start = getPeriodStart();
+  const next = getResetDate(start.getFullYear(), start.getMonth() + 1);
+  return Math.round((next - today) / (24 * 60 * 60 * 1000));
 }
 
 // 残り日数の欄に、今日から自動計算した日数を入れる（あとから手で直せる）
 function setRemainingDays() {
   const today = new Date();
+  const start = getPeriodStart();
+  const next = getResetDate(start.getFullYear(), start.getMonth() + 1);
+  const lastDay = new Date(next.getFullYear(), next.getMonth(), next.getDate() - 1);
   document.getElementById("days").value = getRemainingDays();
   document.getElementById("days-note").textContent =
-    "今日（" + (today.getMonth() + 1) + "/" + today.getDate() + "）から月末までを自動で入れました";
+    "今日（" + (today.getMonth() + 1) + "/" + today.getDate() + "）から" +
+    (lastDay.getMonth() + 1) + "/" + lastDay.getDate() + "までを自動で入れました";
+}
+
+// 結果カードに、リセット日のお知らせを出す
+function updateResetNote() {
+  document.getElementById("reset-note").textContent =
+    "毎月" + getResetDay() + "日に、臨時収入と支出の記録は自動でリセットされます";
 }
 
 // 一覧の1行を作る（texts は左から順に並べる文字、isEditing が true なら修正中の色にする）
@@ -1071,7 +1108,7 @@ function checkNewMonth() {
     return;
   }
 
-  let message = (new Date().getMonth() + 1) + "月になったので、臨時収入と支出の記録をリセットしました。";
+  let message = "リセット日（" + getResetDay() + "日）になったので、臨時収入と支出の記録をリセットしました。";
 
   // 先月の残り = 収入の合計 - 固定費 - 出費の合計（基本収入も臨時収入もない月は、貯金額を変えない）
   if (hasIncome()) {
@@ -1176,6 +1213,14 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
+  // リセット日を変えたときは、記録は消さずに今の期間として扱い直す
+  document.getElementById("reset-day").addEventListener("input", function () {
+    savedMonth = getMonthKey();
+    updateResetNote();
+    setRemainingDays();
+    refresh();
+  });
+
   // 月が変わったお知らせを閉じる
   document.getElementById("month-notice-close").addEventListener("click", function () {
     document.getElementById("month-notice").hidden = true;
@@ -1193,5 +1238,6 @@ document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("settings-fold").open = getNumber("income") === 0;
   checkNewMonth();
   setRemainingDays();
+  updateResetNote();
   refresh();
 });

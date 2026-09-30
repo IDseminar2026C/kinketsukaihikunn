@@ -27,7 +27,7 @@
       <p class="result-remaining" id="result-remaining"></p>
       <p class="result-savings" id="result-savings"></p>
       <p class="result-message" id="result-message">数値を入力してください</p>
-      <p class="note">毎月1日に、臨時収入と支出の記録は自動でリセットされます</p>
+      <p class="note" id="reset-note"></p>
     </section>
 
     <!-- エリア2：基本設定（表示はページのいちばん下） -->
@@ -52,6 +52,11 @@
         <label>
           前月までの貯金額（円）
           <input type="number" id="savings" min="0" inputmode="numeric" placeholder="例：20000">
+        </label>
+        <label>
+          リセット日（毎月何日）
+          <input type="number" id="reset-day" min="1" max="31" inputmode="numeric" placeholder="例：25">
+          <span class="note">この日に臨時収入と支出の記録をリセットします（空欄なら1日。その月にない日は月末）</span>
         </label>
         <label class="check">
           <input type="checkbox" id="use-savings">
