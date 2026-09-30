@@ -1,8 +1,8 @@
- `<金欠回避くん>`
+ 金欠回避くん
 
-`<大まかな金額を入れるだけで金欠危険水域を視覚アラートで突きつけ、30秒で危機感を可視化して浪費を防げるアプリです。>`
+大まかな金額を入れるだけで金欠危険水域を視覚アラートで突きつけ、30秒で危機感を可視化して浪費を防げるアプリです。
 
-**公開URL：** `<https://kinketsukaihikunn.vercel.app>`
+**公開URL：** https://kinketsukaihikunn.vercel.app
 
 
 ![alt text](screenshot.png)
