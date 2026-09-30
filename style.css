@@ -150,44 +150,6 @@ body.bankrupt::before {
   }
 }
 
-/* 必殺技の名前（ダメージ数字の下に出る） */
-.damage-skill {
-  position: fixed;
-  top: 58%;
-  left: 50%;
-  z-index: 101;
-  pointer-events: none;
-  padding: 6px 16px;
-  border-radius: 8px;
-  background: rgba(40, 0, 0, 0.85);
-  color: #fff;
-  font-size: 1.3rem;
-  font-weight: bold;
-  white-space: nowrap;
-  animation: damage-skill 1.4s ease-out forwards;
-}
-
-@keyframes damage-skill {
-  0% {
-    opacity: 0;
-    transform: translate(-50%, 0) scale(0.6);
-  }
-  15% {
-    opacity: 1;
-    transform: translate(-50%, 0) scale(1.1);
-  }
-  25% {
-    transform: translate(-50%, 0) scale(1);
-  }
-  80% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-    transform: translate(-50%, 0) scale(1);
-  }
-}
-
 /* 会心の一撃：いつもより激しく揺れる */
 .damage-shake-critical {
   animation: damage-shake-critical 0.7s ease-in-out;
@@ -317,17 +279,9 @@ body.bankrupt::before {
     animation: none;
   }
 
-  .damage-skill,
-  .damage-critical {
-    animation: damage-flash 1.4s ease-out forwards;
-  }
-
-  .damage-skill {
-    transform: translate(-50%, 0);
-  }
-
   .damage-critical {
     transform: translate(-50%, 0) rotate(-8deg);
+    animation: damage-flash 1.4s ease-out forwards;
   }
 
   .rank-banner {
@@ -539,6 +493,17 @@ select {
 
 .fold[open] summary {
   margin-bottom: 8px;
+}
+
+/* 折りたたみの中の折りたたみ（支出の目的の追加・修正） */
+.sub-fold {
+  margin-top: 12px;
+  padding-top: 4px;
+  border-top: 1px dashed #ddd;
+}
+
+.sub-fold summary {
+  font-size: 0.9rem;
 }
 
 /* 記録の入力欄（横に並べる） */

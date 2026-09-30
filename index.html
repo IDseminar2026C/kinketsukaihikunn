@@ -89,13 +89,10 @@
       <details class="fold">
         <summary>支出を記録する</summary>
         <div class="entry-form">
-          <select id="expense-category" aria-label="カテゴリ">
-            <option value="food">食費</option>
-            <option value="social">交際・娯楽費</option>
-            <option value="transport">交通費</option>
-            <option value="misc">その他</option>
-          </select>
+          <!-- 選択肢は script.js で、最初からある目的と追加した目的から作る -->
+          <select id="expense-category" aria-label="目的"></select>
           <input type="number" id="expense-amount" min="1" inputmode="numeric" placeholder="金額（円）" aria-label="金額（円）">
+          <input type="text" id="expense-memo" maxlength="20" placeholder="メモ（任意）" aria-label="メモ">
         </div>
         <p class="form-message" id="expense-error"></p>
         <div class="form-buttons">
@@ -103,14 +100,23 @@
           <button type="button" class="cancel-button" id="expense-cancel" hidden>キャンセル</button>
         </div>
 
-        <p class="totals">
-          食費 <span id="food-total">0</span> 円 ／
-          交際・娯楽費 <span id="social-total">0</span> 円 ／
-          交通費 <span id="transport-total">0</span> 円 ／
-          その他 <span id="misc-total">0</span> 円
-        </p>
+        <p class="totals" id="expense-totals" hidden></p>
         <p class="total-line">支出の合計：<span id="expense-total">0</span> 円</p>
         <ul class="entry-list" id="expense-list"></ul>
+
+        <details class="fold sub-fold">
+          <summary>目的を追加・修正する</summary>
+          <p class="note">最初からある「食費」「交際・娯楽費」「交通費」「その他」は修正・削除できません</p>
+          <div class="entry-form">
+            <input type="text" id="category-name" maxlength="10" placeholder="目的の名前" aria-label="目的の名前">
+          </div>
+          <p class="form-message" id="category-error"></p>
+          <div class="form-buttons">
+            <button type="button" class="add-button" id="category-add">追加する</button>
+            <button type="button" class="cancel-button" id="category-cancel" hidden>キャンセル</button>
+          </div>
+          <ul class="entry-list" id="category-list"></ul>
+        </details>
       </details>
     </section>
 

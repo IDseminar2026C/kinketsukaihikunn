@@ -20,20 +20,12 @@ const CAUTION_LINE = 3000;
 // 段階ごとに結果カードへ付けるクラス名
 const LEVEL_CLASSES = ["danger", "warning", "caution", "safe"];
 
-// 支出カテゴリの表示名
+// 最初からある支出カテゴリの表示名（修正・削除はできない）
 const CATEGORY_NAMES = {
   food: "食費",
   social: "交際・娯楽費",
   transport: "交通費",
   misc: "その他"
-};
-
-// 出費のカテゴリごとの「必殺技」の名前（ダメージ演出で表示する）
-const SKILL_NAMES = {
-  food: "🍔 食欲の一撃！",
-  social: "🍻 付き合いの呪い！",
-  transport: "🚃 移動の代償！",
-  misc: "🛍️ 衝動買いの罠！"
 };
 
 // 称号の段階（order が大きいほど上のランク）
@@ -48,8 +40,11 @@ const RANKS = {
 // 臨時収入の記録の一覧 { id, memo, amount, date }（memo は空欄でもよい）
 let extraIncomes = [];
 
-// 出費の記録の一覧 { id, category, amount, date }
+// 出費の記録の一覧 { id, category, memo, amount, date }（memo は空欄でもよい）
 let expenses = [];
+
+// 自分で追加した支出カテゴリの一覧 { id, name }（月が変わっても消さない）
+let customCategories = [];
 
 // 場所ごとの残高の一覧 { id, name, amount }
 let balances = [];
@@ -58,6 +53,7 @@ let balances = [];
 let editingExtraId = null;
 let editingExpenseId = null;
 let editingBalanceId = null;
+let editingCategoryId = null;
 
 // データを最後に使った月（例："2026-09"）。まだ分からないときは null
 let savedMonth = null;
@@ -97,6 +93,28 @@ function findById(list, id) {
 function findByName(name, exceptId) {
   const key = normalizeName(name);
   return balances.find(function (item) {
+    return item.id !== exceptId && normalizeName(item.name) === key;
+  });
+}
+
+// 最初からあるカテゴリと自分で追加したカテゴリを、並べる順に { id, name } の一覧で返す
+function getAllCategories() {
+  const list = Object.keys(CATEGORY_NAMES).map(function (key) {
+    return { id: key, name: CATEGORY_NAMES[key] };
+  });
+  return list.concat(customCategories);
+}
+
+// カテゴリの表示名を返す（見つからないときは「その他」）
+function getCategoryName(id) {
+  const item = findById(getAllCategories(), id);
+  return item ? item.name : CATEGORY_NAMES.misc;
+}
+
+// カテゴリの中から名前が同じものを探す（exceptId のカテゴリは探さない）
+function findCategoryByName(name, exceptId) {
+  const key = normalizeName(name);
+  return getAllCategories().find(function (item) {
     return item.id !== exceptId && normalizeName(item.name) === key;
   });
 }
@@ -393,15 +411,18 @@ function renderExpenses() {
   const list = document.getElementById("expense-list");
   list.innerHTML = "";
 
-  const totals = { food: 0, social: 0, transport: 0, misc: 0 };
+  const totals = {};
 
   // 新しい記録が上に来るように、後ろから順に並べる
   expenses.slice().reverse().forEach(function (item) {
-    totals[item.category] += item.amount;
+    totals[item.category] = (totals[item.category] || 0) + item.amount;
+    // メモがあれば「食費（ランチ）」のように後ろに付ける
+    const memo = item.memo || "";
+    const name = getCategoryName(item.category) + (memo === "" ? "" : "（" + memo + "）");
     list.appendChild(createRow(
       [
         { className: "entry-date", value: item.date },
-        { className: "entry-name", value: CATEGORY_NAMES[item.category] },
+        { className: "entry-name", value: name },
         { className: "entry-amount", value: item.amount.toLocaleString() + " 円" }
       ],
       item.id === editingExpenseId,
@@ -410,16 +431,154 @@ function renderExpenses() {
     ));
   });
 
-  document.getElementById("food-total").textContent = totals.food.toLocaleString();
-  document.getElementById("social-total").textContent = totals.social.toLocaleString();
-  document.getElementById("transport-total").textContent = totals.transport.toLocaleString();
-  document.getElementById("misc-total").textContent = totals.misc.toLocaleString();
+  // カテゴリ別の合計（0円のカテゴリは出さない。支出が1件もなければ行ごと隠す）
+  const parts = [];
+  getAllCategories().forEach(function (category) {
+    if (totals[category.id] > 0) {
+      parts.push(category.name + " " + totals[category.id].toLocaleString() + " 円");
+    }
+  });
+  const totalsLine = document.getElementById("expense-totals");
+  totalsLine.textContent = parts.join(" ／ ");
+  totalsLine.hidden = parts.length === 0;
+
   document.getElementById("expense-total").textContent = getExpenseTotal().toLocaleString();
+}
+
+// 支出カテゴリのプルダウンと、自分で追加したカテゴリの一覧を作り直す
+function renderCategories() {
+  const select = document.getElementById("expense-category");
+  const selectedId = select.value;
+  select.innerHTML = "";
+  getAllCategories().forEach(function (category) {
+    const option = document.createElement("option");
+    option.value = category.id;
+    option.textContent = category.name;
+    select.appendChild(option);
+  });
+  // 作り直す前に選んでいたカテゴリがあれば、選んだままにする
+  if (findById(getAllCategories(), selectedId)) {
+    select.value = selectedId;
+  }
+
+  const list = document.getElementById("category-list");
+  list.innerHTML = "";
+  customCategories.forEach(function (category) {
+    list.appendChild(createRow(
+      [{ className: "entry-name", value: category.name }],
+      category.id === editingCategoryId,
+      function () { startEditCategory(category.id); },
+      function () { deleteCategory(category.id); }
+    ));
+  });
+}
+
+// 「追加する」「更新する」ボタン：カテゴリを追加する、または修正中のカテゴリの名前を変える
+// 修正でほかのカテゴリと同じ名前にしたときは、そちらに記録をまとめる
+function submitCategory() {
+  const name = document.getElementById("category-name").value.trim();
+  if (name === "") {
+    showFormMessage("category-error", "目的の名前を入力してください", true);
+    return;
+  }
+
+  const sameItem = findCategoryByName(name, editingCategoryId);
+  let message;
+  // 追加・合算したあとに、プルダウンで選んでおくカテゴリ
+  let selectId = null;
+
+  if (editingCategoryId === null) {
+    if (sameItem) {
+      showFormMessage("category-error", "同じ名前の目的がすでにあります", true);
+      return;
+    }
+    const category = { id: createId(), name: name };
+    customCategories.push(category);
+    selectId = category.id;
+    message = "「" + name + "」を追加しました";
+  } else if (sameItem) {
+    if (!confirm("「" + sameItem.name + "」にまとめます。よろしいですか？")) {
+      return;
+    }
+    const mergedId = editingCategoryId;
+    // まとめる元のカテゴリの記録を、まとめ先に付け替えてから消す
+    expenses.forEach(function (item) {
+      if (item.category === mergedId) {
+        item.category = sameItem.id;
+      }
+    });
+    customCategories = customCategories.filter(function (item) {
+      return item.id !== mergedId;
+    });
+    if (document.getElementById("expense-category").value === mergedId) {
+      selectId = sameItem.id;
+    }
+    message = "「" + sameItem.name + "」にまとめました";
+  } else {
+    const item = findById(customCategories, editingCategoryId);
+    if (item) {
+      item.name = name;
+    }
+    message = "「" + name + "」に直しました";
+  }
+
+  clearCategoryForm();
+  refresh();
+  if (selectId !== null) {
+    document.getElementById("expense-category").value = selectId;
+  }
+  showFormMessage("category-error", message, false);
+}
+
+// 「修正」ボタン：カテゴリの名前を入力欄に戻して、修正できる状態にする
+function startEditCategory(id) {
+  const item = findById(customCategories, id);
+  if (!item) {
+    return;
+  }
+  editingCategoryId = id;
+  document.getElementById("category-name").value = item.name;
+  document.getElementById("category-error").textContent = "";
+  document.getElementById("category-add").textContent = "更新する";
+  document.getElementById("category-cancel").hidden = false;
+  document.getElementById("category-name").focus();
+  renderCategories();
+}
+
+// 「削除」ボタン：今月の記録で使っていなければ、確認してからカテゴリを消す
+function deleteCategory(id) {
+  const isUsed = expenses.some(function (item) {
+    return item.category === id;
+  });
+  if (isUsed) {
+    showFormMessage("category-error", "この目的の記録があるため削除できません", true);
+    return;
+  }
+  if (!confirm("この目的を削除します。よろしいですか？")) {
+    return;
+  }
+  customCategories = customCategories.filter(function (item) {
+    return item.id !== id;
+  });
+  if (editingCategoryId === id) {
+    clearCategoryForm();
+  }
+  refresh();
+}
+
+// カテゴリの入力欄を空にして、「追加する」の状態に戻す
+function clearCategoryForm() {
+  editingCategoryId = null;
+  document.getElementById("category-name").value = "";
+  document.getElementById("category-error").textContent = "";
+  document.getElementById("category-add").textContent = "追加する";
+  document.getElementById("category-cancel").hidden = true;
 }
 
 // 「記録する」「更新する」ボタン：出費を追加する、または修正中の記録を書き換える
 function submitExpense() {
   const category = document.getElementById("expense-category").value;
+  const memo = document.getElementById("expense-memo").value.trim();
   const amount = readAmount("expense-amount", 1);
   if (amount === null) {
     showFormMessage("expense-error", "金額は1円以上の数字で入力してください", true);
@@ -434,11 +593,12 @@ function submitExpense() {
   const isCritical = limitBefore !== null && amount > limitBefore;
 
   if (isNew) {
-    expenses.push({ id: createId(), category: category, amount: amount, date: getTodayText() });
+    expenses.push({ id: createId(), category: category, memo: memo, amount: amount, date: getTodayText() });
   } else {
     const item = findById(expenses, editingExpenseId);
     if (item) {
       item.category = category;
+      item.memo = memo;
       item.amount = amount;
     }
   }
@@ -447,7 +607,7 @@ function submitExpense() {
   refresh();
 
   if (isNew) {
-    showDamage(amount, category, isCritical);
+    showDamage(amount, isCritical);
   }
 }
 
@@ -460,9 +620,9 @@ function getDailyLimit() {
   return Math.floor(getRemaining() / days);
 }
 
-// 出費を記録した瞬間の「ダメージ」演出（画面の揺れ・赤いフラッシュ・ダメージ数字・必殺技の名前）
+// 出費を記録した瞬間の「ダメージ」演出（画面の揺れ・赤いフラッシュ・ダメージ数字）
 // isCritical が true のときは「会心の一撃」として、揺れを激しくして CRITICAL HIT!! を出す
-function showDamage(amount, category, isCritical) {
+function showDamage(amount, isCritical) {
   const effects = [];
 
   // 画面を揺らす（連続で記録しても毎回揺れるように、一度外してから付け直す）
@@ -481,12 +641,6 @@ function showDamage(amount, category, isCritical) {
   number.className = "damage-number";
   number.textContent = "-" + amount.toLocaleString();
   effects.push(number);
-
-  // カテゴリごとの必殺技の名前を出す
-  const skill = document.createElement("div");
-  skill.className = "damage-skill";
-  skill.textContent = SKILL_NAMES[category] || "💥 謎の出費！";
-  effects.push(skill);
 
   // 会心の一撃
   if (isCritical) {
@@ -620,6 +774,7 @@ function startEditExpense(id) {
   }
   editingExpenseId = id;
   document.getElementById("expense-category").value = item.category;
+  document.getElementById("expense-memo").value = item.memo || "";
   document.getElementById("expense-amount").value = item.amount;
   document.getElementById("expense-error").textContent = "";
   document.getElementById("expense-add").textContent = "更新する";
@@ -646,6 +801,7 @@ function deleteExpense(id) {
 // 出費の入力欄を空にして、「記録する」の状態に戻す
 function clearExpenseForm() {
   editingExpenseId = null;
+  document.getElementById("expense-memo").value = "";
   document.getElementById("expense-amount").value = "";
   document.getElementById("expense-error").textContent = "";
   document.getElementById("expense-add").textContent = "記録する";
@@ -844,6 +1000,7 @@ function saveData() {
     useSavings: document.getElementById("use-savings").checked,
     extraIncomes: extraIncomes,
     expenses: expenses,
+    customCategories: customCategories,
     balances: balances
   };
   saveIds.forEach(function (id) {
@@ -879,6 +1036,9 @@ function loadData() {
   if (Array.isArray(data.expenses)) {
     expenses = data.expenses;
   }
+  if (Array.isArray(data.customCategories)) {
+    customCategories = data.customCategories;
+  }
   if (Array.isArray(data.balances)) {
     balances = data.balances;
   }
@@ -890,6 +1050,7 @@ function loadData() {
 // 一覧・計算結果を表示し直して、保存する
 function refresh() {
   renderExtraIncomes();
+  renderCategories();
   renderExpenses();
   renderBalances();
   calculate();
@@ -975,9 +1136,23 @@ document.addEventListener("DOMContentLoaded", function () {
     clearExpenseForm();
     renderExpenses();
   });
-  document.getElementById("expense-amount").addEventListener("keydown", function (event) {
+  ["expense-amount", "expense-memo"].forEach(function (id) {
+    document.getElementById(id).addEventListener("keydown", function (event) {
+      if (event.key === "Enter" && !event.isComposing) {
+        submitExpense();
+      }
+    });
+  });
+
+  // 支出の目的（カテゴリ）の追加・修正
+  document.getElementById("category-add").addEventListener("click", submitCategory);
+  document.getElementById("category-cancel").addEventListener("click", function () {
+    clearCategoryForm();
+    renderCategories();
+  });
+  document.getElementById("category-name").addEventListener("keydown", function (event) {
     if (event.key === "Enter" && !event.isComposing) {
-      submitExpense();
+      submitCategory();
     }
   });
 
