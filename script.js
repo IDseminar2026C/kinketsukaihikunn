@@ -1014,6 +1014,8 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   loadData();
+  // 基本収入がまだ入っていない（初めて使う）ときは、基本設定を開いておく
+  document.getElementById("settings-fold").open = getNumber("income") === 0;
   checkNewMonth();
   setRemainingDays();
   refresh();

@@ -463,9 +463,16 @@ body.bankrupt::before {
 
 /* 全体レイアウト（スマホ優先の1カラム） */
 .container {
+  display: flex;
+  flex-direction: column;
   max-width: 480px;
   margin: 0 auto;
   padding: 16px;
+}
+
+/* 基本設定は最初に一度入れたらあまり変えないので、ページのいちばん下に出す */
+.settings-card {
+  order: 1;
 }
 
 .card {
