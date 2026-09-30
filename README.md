@@ -4,7 +4,6 @@
 
 **公開URL：** `<https://kinketsukaihikunn.vercel.app>`
 
-`<スクリーンショットをここに貼る>`
 
 <!--
 スクリーンショットの貼り方：
