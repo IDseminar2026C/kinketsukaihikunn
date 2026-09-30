@@ -5,12 +5,7 @@
 **公開URL：** `<https://kinketsukaihikunn.vercel.app>`
 
 
-<!--screenshot.png -->
-スクリーンショットの貼り方：
-1. アプリの画面をスクリーンショットで撮る（Windows: Win+Shift+S / Mac: Cmd+Shift+4）
-2. 画像ファイルをこのフォルダの screenshot.png という名前で保存する
-3. 下の行の <!-- --> 
-<!-- screenshot.png -->
+![alt text](screenshot.png)
 
 ---
 
