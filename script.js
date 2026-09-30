@@ -23,14 +23,16 @@ const LEVEL_CLASSES = ["danger", "warning", "caution", "safe"];
 // 支出カテゴリの表示名
 const CATEGORY_NAMES = {
   food: "食費",
-  social: "交際費",
-  misc: "雑費"
+  social: "交際・娯楽費",
+  transport: "交通費",
+  misc: "その他"
 };
 
 // 出費のカテゴリごとの「必殺技」の名前（ダメージ演出で表示する）
 const SKILL_NAMES = {
   food: "🍔 食欲の一撃！",
   social: "🍻 付き合いの呪い！",
+  transport: "🚃 移動の代償！",
   misc: "🛍️ 衝動買いの罠！"
 };
 
@@ -391,7 +393,7 @@ function renderExpenses() {
   const list = document.getElementById("expense-list");
   list.innerHTML = "";
 
-  const totals = { food: 0, social: 0, misc: 0 };
+  const totals = { food: 0, social: 0, transport: 0, misc: 0 };
 
   // 新しい記録が上に来るように、後ろから順に並べる
   expenses.slice().reverse().forEach(function (item) {
@@ -410,6 +412,7 @@ function renderExpenses() {
 
   document.getElementById("food-total").textContent = totals.food.toLocaleString();
   document.getElementById("social-total").textContent = totals.social.toLocaleString();
+  document.getElementById("transport-total").textContent = totals.transport.toLocaleString();
   document.getElementById("misc-total").textContent = totals.misc.toLocaleString();
   document.getElementById("expense-total").textContent = getExpenseTotal().toLocaleString();
 }
@@ -558,16 +561,17 @@ function showRankChange(before, after) {
   });
 }
 
-// 前回確かめたときの「使える残金」（まだ確かめていないときは null）
-let lastRemaining = null;
+// 前回確かめたときの「収入の合計」（まだ確かめていないときは null）
+let lastIncomeTotal = null;
 
-// 使える残金が前回より増えていたら、増えた分の回復演出を出す
+// 収入の合計（基本収入 + 臨時収入）が前回より増えていたら、増えた分の回復演出を出す
+// 目標額を下げる・貯金を含める・固定費や支出を減らすなどは、お金が増えたわけではないので出さない
 function checkHeal() {
-  const remaining = getRemaining();
-  if (lastRemaining !== null && remaining > lastRemaining && hasIncome()) {
-    showHeal(remaining - lastRemaining);
+  const incomeTotal = getIncomeTotal();
+  if (lastIncomeTotal !== null && incomeTotal > lastIncomeTotal) {
+    showHeal(incomeTotal - lastIncomeTotal);
   }
-  lastRemaining = remaining;
+  lastIncomeTotal = incomeTotal;
 }
 
 // お金が増えた瞬間の「回復」演出（緑の光・回復数字・コインが降る）

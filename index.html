@@ -87,8 +87,9 @@
         <div class="entry-form">
           <select id="expense-category" aria-label="カテゴリ">
             <option value="food">食費</option>
-            <option value="social">交際費</option>
-            <option value="misc">雑費</option>
+            <option value="social">交際・娯楽費</option>
+            <option value="transport">交通費</option>
+            <option value="misc">その他</option>
           </select>
           <input type="number" id="expense-amount" min="1" inputmode="numeric" placeholder="金額（円）" aria-label="金額（円）">
         </div>
@@ -100,8 +101,9 @@
 
         <p class="totals">
           食費 <span id="food-total">0</span> 円 ／
-          交際費 <span id="social-total">0</span> 円 ／
-          雑費 <span id="misc-total">0</span> 円
+          交際・娯楽費 <span id="social-total">0</span> 円 ／
+          交通費 <span id="transport-total">0</span> 円 ／
+          その他 <span id="misc-total">0</span> 円
         </p>
         <p class="total-line">支出の合計：<span id="expense-total">0</span> 円</p>
         <ul class="entry-list" id="expense-list"></ul>
